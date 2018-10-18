@@ -1,0 +1,8 @@
+---- manual/fexistsprod ----  
+Spec              123         
+BP Spec           164         
+BP Syntax         365         
+BP Semantics      172         
+Metatheory        98          
+BOILERPLATE:      701         
+TOTAL:            922         

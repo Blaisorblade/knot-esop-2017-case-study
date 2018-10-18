@@ -1,0 +1,174 @@
+tp : type.  %name tp T.
+top	: tp.
+arrow	: tp -> tp -> tp.
+forall	: tp -> (tp -> tp) -> tp.
+assm : tp -> tp -> type.
+var  : tp -> type.
+sub  : tp -> tp -> type.
+sub_tp : tp -> tp -> type.
+sub_tp_top    : sub_tp _ top.
+sub_tp_refl   : sub_tp T T.
+sub_tp_trans  : sub_tp T1 T3
+		 <- sub_tp T1 T2
+		 <- sub_tp T2 T3.
+sub_tp_arrow  : sub_tp (arrow S1 S2) (arrow T1 T2)
+		 <- sub_tp T1 S1
+		 <- sub_tp S2 T2.
+sub_tp_forall : sub_tp (forall S1 S2) (forall T1 T2)
+		 <- sub_tp T1 S1
+		 <- ({x} sub_tp x T1 -> sub_tp (S2 x) (T2 x)).
+term : type.    %name term E.
+abs     : tp -> (term -> term) -> term.
+app     : term -> term -> term.
+tabs    : tp -> (tp -> term) -> term.
+tapp    : term -> tp -> term.
+value : term -> type.
+value_abs     : value (abs _ _).
+value_tabs    : value (tabs _ _).
+of : term -> tp -> type.
+of_abs  : of
+	   (abs T1 E)
+	   (arrow T1 T2)
+	   <- ({x} of x T1 -> of (E x) T2).
+of_app  : of
+	   (app E1 E2)
+	   T12
+	   <- of E1 (arrow T11 T12)
+	   <- of E2 T11.
+of_tabs : of
+	   (tabs T1 E)
+	   (forall T1 T2)
+	   <- ({x} sub_tp x T1 -> of (E x) (T2 x)).
+of_tapp : of
+	   (tapp E T2)
+	   (T12 T2)
+	   <- of E (forall T11 T12)
+	   <- sub_tp T2 T11.
+of_sub  : of
+	   E
+	   T
+	   <- of E S
+	   <- sub_tp S T.
+step : term -> term -> type.
+step_app      : step
+		 (app (abs _ E1) E2)
+		 (E1 E2).
+step_tapp     : step
+		 (tapp (tabs _ E1) T)
+		 (E1 T).
+step_app_fun  : step
+		 (app E1 E2)
+		 (app E1' E2)
+		 <- step E1 E1'.
+step_app_arg  : step
+		 (app V1 E2)
+		 (app V1 E2')
+		 <- value V1
+		 <- step E2 E2'.
+step_tapp_fun : step
+		 (tapp E T)
+		 (tapp E' T)
+		 <- step E E'.
+progresses : term -> type.
+progresses_value : progresses E
+		    <- value E.
+progresses_steps : progresses E
+		    <- step E E'.
+false : type.
+absurd_tsa : sub_tp top (arrow _ _) -> false -> type.
+%mode absurd_tsa +X1 -X2.
+absurd_fsa : sub_tp (forall _ _) (arrow _ _) -> false -> type.
+%mode absurd_fsa +X1 -X2.
+%worlds () (absurd_fsa _ _) (absurd_tsa _ _).
+%total (D D') (absurd_fsa D _) (absurd_tsa D' _).
+absurd_tsf : sub_tp top (forall _ _) -> false -> type.
+%mode absurd_tsf +X1 -X2.
+%worlds () (absurd_tsf _ _).
+%total (D) (absurd_tsf D _).
+absurd_asf : sub_tp (arrow _ _) (forall _ _) -> false -> type.
+%mode absurd_asf +X1 -X2.
+%worlds () (absurd_asf _ _).
+%total (D) (absurd_asf D _).
+absurd_ota : of (tabs _ _) (arrow _ _) -> false -> type.
+%mode absurd_ota +X1 -X2.
+%worlds () (absurd_ota _ _).
+%total (D) (absurd_ota D _).
+absurd_oaf : of (abs _ _) (forall _ _) -> false -> type.
+%mode absurd_oaf +X1 -X2.
+%worlds () (absurd_oaf _ _).
+%total (D) (absurd_oaf D _).
+raa_sub_tp : false -> sub_tp T1 T2 -> type.
+%mode +{T1} +{T2} +{F} -{D:sub_tp T1 T2} (raa_sub_tp F D).
+%worlds () (raa_sub_tp _ _).
+%total [] (raa_sub_tp _ _).
+raa_sub_imp_sub : false -> ({x} sub_tp x T -> sub_tp (T1 x) (T2 x)) -> type.
+%mode +{T} +{T1} +{T2} +{F} -{D:{x} sub_tp x T -> sub_tp (T1 x) (T2 x)} (raa_sub_imp_sub F D).
+%worlds () (raa_sub_imp_sub _ _).
+%total [] (raa_sub_imp_sub _ _).
+raa_of : false -> of E T -> type.
+%mode +{E} +{T} +{F} -{D:of E T} (raa_of F D).
+%worlds () (raa_of _ _).
+%total [] (raa_of _ _).
+raa_of_imp_of : false -> ({x} of x T1 -> of (E x) T2) -> type.
+%mode +{E} +{T1} +{T2} +{F} -{D:{x} of x T1 -> of (E x) T2} (raa_of_imp_of F D).
+%worlds () (raa_of_imp_of _ _).
+%total [] (raa_of_imp_of _ _).
+raa_sub_imp_of : false -> ({x} sub_tp x T -> of (E x) (T2 x)) -> type.
+%mode +{T} +{E} +{T2} +{F} -{D:{x} sub_tp x T -> of (E x) (T2 x)} (raa_sub_imp_of F D).
+%worlds () (raa_sub_imp_of _ _).
+%total [] (raa_sub_imp_of _ _).
+invert_sub_arrow : sub_tp (arrow S1 S2) (arrow T1 T2)
+		    -> sub_tp T1 S1
+		    -> sub_tp S2 T2
+		    -> type.
+%mode invert_sub_arrow +X1 -X2 -X3.
+%worlds () (invert_sub_arrow _ _ _).
+%total (Tsub) (invert_sub_arrow Tsub _ _).
+invert_sub_forall : sub_tp (forall S1 S2) (forall T1 T2)
+		    -> sub_tp T1 S1
+		    -> ({x} sub_tp x T1 -> sub_tp (S2 x) (T2 x))
+		    -> type.
+%mode invert_sub_forall +X1 -X2 -X3.
+%worlds () (invert_sub_forall _ _ _).
+%total (Dsub) (invert_sub_forall Dsub _ _).
+invert_of_abs : of (abs S1 E) (arrow T1 T2)
+	  -> ({x} of x S1 -> of (E x) S2)
+	  -> sub_tp T1 S1
+	  -> sub_tp S2 T2
+	  -> type.
+%mode invert_of_abs +X1 -X2 -X3 -X4.
+%worlds () (invert_of_abs _ _ _ _).
+%total [Eof] (invert_of_abs Eof _ _ _).
+invert_of_tabs : of (tabs S1 E) (forall T1 T2)
+	  -> ({x} sub_tp x S1 -> of (E x) (S2 x))
+	  -> sub_tp T1 S1
+	  -> ({x} sub_tp x T1 -> sub_tp (S2 x) (T2 x))
+	  -> type.
+%mode invert_of_tabs +X1 -X2 -X3 -X4.
+%worlds () (invert_of_tabs _ _ _ _).
+%total [Eof] (invert_of_tabs Eof _ _ _).
+raa_progresses : false -> progresses E -> type.
+%mode +{E} +{F} -{D:progresses E} (raa_progresses F D).
+%worlds () (raa_progresses _ _).
+%total [] (raa_progresses _ _).
+app_progresses : of (app E1 E2) T
+	  -> progresses E1
+	  -> progresses E2
+	  -> progresses (app E1 E2) -> type.
+%mode app_progresses +X1 +X2 +X3 -X4.
+%worlds () (app_progresses _ _ _ _).
+%total [Eof] (app_progresses Eof _ _ _).
+tapp_progresses : of (tapp E T) T'
+	  -> progresses E
+	  -> progresses (tapp E T) -> type.
+%mode tapp_progresses +X1 +X2 -X3.
+%worlds () (tapp_progresses _ _ _).
+%total [Eof] (tapp_progresses Eof _ _).
+preservation : of E T -> step E E' -> of E' T -> type.
+%mode preservation +X1 +X2 -X3.
+%worlds () (preservation _ _ _).
+%total (Eof) (preservation Eof _ _).
+progress : of E T -> progresses E -> type.
+%mode progress +X1 -X2.
+%worlds () (progress _ _).
+%total (Eof) (progress Eof _).
